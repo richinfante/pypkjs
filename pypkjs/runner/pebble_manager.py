@@ -19,7 +19,7 @@ logger = logging.getLogger("pypkjs.pebble_manager")
 class PebbleManager(object):
     def __init__(self, qemu):
         self.qemu = qemu.split(':')
-        print self.qemu
+        self.qemu[1] = int(self.qemu[1])
         self.pebble = PebbleConnection(QemuTransport(*self.qemu), log_packet_level=logging.DEBUG)
         self.handle_start = None
         self.handle_stop = None
@@ -45,7 +45,7 @@ class PebbleManager(object):
         self.pebble.register_endpoint(AppRunState, self.handle_lifecycle)
         self.launcher = AppMessageService(self.pebble, message_type=LegacyAppLaunchMessage)
         self.launcher.register_handler("appmessage", self.handle_launcher)
-    
+
     def request_running_app(self):
         if self.pebble.firmware_version.major >= 3:
             self.pebble.send_packet(AppRunState(data=AppRunStateRequest()))
@@ -68,7 +68,7 @@ class PebbleManager(object):
         elif state == LegacyAppLaunchMessage.States.NotRunning:
             if callable(self.handle_stop):
                 self.handle_stop(uuid)
-    
+
     @property
     def timeline_is_supported(self):
         return self.pebble.firmware_version.major >= 3

@@ -7,7 +7,7 @@ pygeoip==0.3.2
 pypng==0.20220715.0
 python-dateutil==2.4.1
 requests==2.32.3
-sh==1.09
+sh==2.2.1
 six==1.17.0
 websocket-client==1.8.0
 libpebble2>=0.0.20
