@@ -3,9 +3,9 @@ __author__ = 'katharine'
 from setuptools import setup, find_packages
 from pkg_resources import resource_string
 
-requirements_str = resource_string(__name__, 'requirements.txt')
-requirements = [line.strip() for line in requirements_str.splitlines()]
-
+# requirements_str = resource_string(__name__, 'requirements.txt').decode()
+# requirements = [line.strip() for line in requirements_str.splitlines()]
+# print(requirements)
 __version__= None  # Overwritten by executing version.py.
 with open('pypkjs/version.py') as f:
     exec(f.read())
@@ -18,13 +18,25 @@ setup(name='pypkjs',
       author_email='katharine@pebble.com',
       license='MIT',
       packages=find_packages(),
-      install_requires=requirements,
+      install_requires=[
+            "backports.ssl-match-hostname==3.4.0.2",
+            "gevent==24.11.1",
+            "gevent-websocket==0.10.1",
+            "greenlet>=0.4.7",
+            "peewee==3.17.9",
+            "pygeoip==0.3.2",
+            "pypng==0.20220715.0",
+            "python-dateutil==2.4.1",
+            "requests==2.7.0",
+            "sh==1.09",
+            "six==1.9.0",
+            "websocket-client==0.32.0",
+            "libpebble2>=0.0.20",
+            "netaddr==0.7.18",
+            "stpyv8==13.1.201.22",
+      ],
       package_data={
           'pypkjs.javascript.navigator': ['GeoLiteCity.dat'],
-          'pypkjs.PyV8.darwin64': ['_PyV8.so'],
-          'pypkjs.PyV8.linux32': ['_PyV8.so'],
-          'pypkjs.PyV8.linux64': ['_PyV8.so', 'libboost_python.so.1.53.0', 'libboost_system-mt.so.1.53.0',
-                           'libboost_thread-mt.so.1.53.0'],
           'pypkjs.timeline': ['layouts.json'],
       },
       entry_points={

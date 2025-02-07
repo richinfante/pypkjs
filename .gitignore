@@ -1,3 +1,7 @@
 *.pyc
 .idea
 .env
+.DS_Store
+/dist
+pypkjs.egg-info
+
