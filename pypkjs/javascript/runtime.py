@@ -19,9 +19,15 @@ CALL_TABLE = {
     'exit': lambda x: exit(x or 0)
 }
 
+def printify_arg(arg):
+    if isinstance(arg, (str, int, float)):
+        return arg
+    else:
+        return repr(arg)
+
 class SyscallInterface(object):
     def exec(self, name, args):
-        print('SYSCALL: ', name, json.dumps([str(arg) for arg in args]))
+        print('SYSCALL: ', name, json.dumps([printify_arg(arg) for arg in args]))
         return CALL_TABLE[name](*args)
 
 class Global(v8.JSClass):

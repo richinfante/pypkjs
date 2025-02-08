@@ -2,7 +2,7 @@ from __future__ import absolute_import
 __author__ = 'katharine'
 
 from .console import Console
-# from .performance import Performance
+from .performance import Performance
 # from .timers import Timers
 # from .localstorage import LocalStorage
 from .pebble import Pebble
@@ -19,7 +19,7 @@ class PebbleKitJS(object):
 
         self.extensions = [
             Console(runtime),
-            # Performance(runtime),
+            Performance(runtime),
             # self.local_storage,
             # Navigator(runtime),
             # Timers(runtime),
