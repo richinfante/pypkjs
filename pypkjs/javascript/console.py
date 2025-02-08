@@ -1,20 +1,28 @@
 from __future__ import absolute_import
 __author__ = 'katharine'
 
-import pypkjs.PyV8 as v8
-
+import STPyV8 as v8
 
 class Console(object):
     def __init__(self, runtime):
         self.runtime = runtime
-        self.extension = v8.JSExtension(self.runtime.ext_name("console"), """
-        console = new (function () {
-            native function _internal_console();
-            _make_proxies(this, _internal_console(), ['log', 'warn', 'info', 'error']);
-        })();
-        """, lambda f: lambda: self, dependencies=["runtime/internal/proxy"])
+        self.runtime.register_syscall("console.log", self.log)
+        self.runtime.register_syscall("console.warn", self.warn)
+        self.runtime.register_syscall("console.info", self.info)
+        self.runtime.register_syscall("console.error", self.error)
+        
+        self.runtime.run_js("""
+        window.console = {
+            log: function () { _syscall.exec('console.log', Array.prototype.slice.call(arguments)); },
+            warn: function () { _syscall.exec('console.warn', Array.prototype.slice.call(arguments)); },
+            info: function () { _syscall.exec('console.info', Array.prototype.slice.call(arguments)); },
+            error: function () { _syscall.exec('console.error', Array.prototype.slice.call(arguments)); }
+        };
+        """)
 
     def log(self, *params):
+        print('LOG', *params)
+        return
         # kOverview == kLineNumber | kColumnOffset | kScriptName | kFunctionName
         trace_str = str(v8.JSStackTrace.GetCurrentStackTrace(2, v8.JSStackTrace.Options.Overview))
         try:

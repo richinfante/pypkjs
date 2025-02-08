@@ -14,7 +14,7 @@ import traceback
 from uuid import UUID
 import urllib
 
-import pypkjs.PyV8 as v8
+import STPyV8 as v8
 from libpebble2.protocol.appglance import AppGlance, AppGlanceSlice, AppGlanceSliceType
 from libpebble2.protocol.appmessage import AppMessage
 from libpebble2.protocol.blobdb import BlobDatabaseID, BlobStatus
@@ -38,16 +38,40 @@ class TokenException(Exception):
 
 class Pebble(events.EventSourceMixin, v8.JSClass):
     def __init__(self, runtime, pebble):
-        self.extension = v8.JSExtension(runtime.ext_name("pebble"), """
+        runtime.register_syscall("Pebble.sendAppMessage", self.sendAppMessage)
+        runtime.register_syscall("Pebble.showSimpleNotificationOnPebble", self.showSimpleNotificationOnPebble)
+        runtime.register_syscall("Pebble.getAccountToken", self.getAccountToken)
+        runtime.register_syscall("Pebble.getWatchToken", self.getWatchToken)
+        runtime.register_syscall("Pebble.addEventListener", self.addEventListener)
+        runtime.register_syscall("Pebble.removeEventListener", self.removeEventListener)
+        runtime.register_syscall("Pebble.openURL", self.openURL)
+        runtime.register_syscall("Pebble.getTimelineToken", self.getTimelineToken)
+        runtime.register_syscall("Pebble.timelineSubscribe", self.timelineSubscribe)
+        runtime.register_syscall("Pebble.timelineUnsubscribe", self.timelineUnsubscribe)
+        runtime.register_syscall("Pebble.timelineSubscriptions", self.timelineSubscriptions)
+        runtime.register_syscall("Pebble.getActiveWatchInfo", self.getActiveWatchInfo)
+        runtime.register_syscall("Pebble.appGlanceReload", self.appGlanceReload)
+        
+        runtime.run_js("""
         Pebble = new (function() {
-            native function _internal_pebble();
-            _make_proxies(this, _internal_pebble(),
-                ['sendAppMessage', 'showSimpleNotificationOnPebble', 'getAccountToken', 'getWatchToken',
-                'addEventListener', 'removeEventListener', 'openURL', 'getTimelineToken', 'timelineSubscribe',
-                'timelineUnsubscribe', 'timelineSubscriptions', 'getActiveWatchInfo', 'appGlanceReload']);
+            this.sendAppMessage = function() { _syscall.exec('Pebble.sendAppMessage', Array.prototype.slice.call(arguments)); };
+            this.showSimpleNotificationOnPebble = function() { _syscall.exec('Pebble.showSimpleNotificationOnPebble', Array.prototype.slice.call(arguments)); };
+            this.getAccountToken = function() { return _syscall.exec('Pebble.getAccountToken', []); };
+            this.getWatchToken = function() { return _syscall.exec('Pebble.getWatchToken', []); };
+            this.addEventListener = function() { _syscall.exec('Pebble.addEventListener', Array.prototype.slice.call(arguments)); };
+            this.removeEventListener = function() { _syscall.exec('Pebble.removeEventListener', Array.prototype.slice.call(arguments)); };
+            this.openURL = function() { _syscall.exec('Pebble.openURL', Array.prototype.slice.call(arguments)); };
+            this.getTimelineToken = function() { _syscall.exec('Pebble.getTimelineToken', Array.prototype.slice.call(arguments)); };
+            this.timelineSubscribe = function() { _syscall.exec('Pebble.timelineSubscribe', Array.prototype.slice.call(arguments)); };
+            this.timelineUnsubscribe = function() { _syscall.exec('Pebble.timelineUnsubscribe', Array.prototype.slice.call(arguments)); };
+            this.timelineSubscriptions = function() { _syscall.exec('Pebble.timelineSubscriptions', Array.prototype.slice.call(arguments)); };
+            this.getActiveWatchInfo = function() { return _syscall.exec('Pebble.getActiveWatchInfo', []); };
+            this.appGlanceReload = function() { _syscall.exec('Pebble.appGlanceReload', Array.prototype.slice.call(arguments)); };
             this.platform = 'pypkjs';
-        })();
-        """, lambda f: lambda: self, dependencies=["runtime/internal/proxy"])
+        })();          
+                       
+        """)
+        
         self.blobdb = pebble.blobdb
         self.pebble = pebble.pebble
         self.runtime = runtime
@@ -108,10 +132,10 @@ class Pebble(events.EventSourceMixin, v8.JSClass):
 
         app_keys = dict(zip(self.app_keys.values(), self.app_keys.keys()))
         d = self.runtime.context.eval("({})")  # This is kinda absurd.
-        for k, v in dictionary.iteritems():
+        for k, v in dictionary.items():
             if isinstance(v, int):
                 value = v
-            elif isinstance(v, basestring):
+            elif isinstance(v, str):
                 value = v
             elif isinstance(v, bytearray):
                 value = v8.JSArray(list(v))
@@ -132,7 +156,7 @@ class Pebble(events.EventSourceMixin, v8.JSClass):
         self._check_ready()
         to_send = {}
         message = {k: message[str(k)] for k in message.keys()}
-        for k, v in message.iteritems():
+        for k, v in message.items():
             if k in self.app_keys:
                 k = self.app_keys[k]
             try:
@@ -142,11 +166,11 @@ class Pebble(events.EventSourceMixin, v8.JSClass):
 
         d = {}
         appmessage = AppMessage()
-        for k, v in to_send.iteritems():
+        for k, v in to_send.items():
             if isinstance(v, v8.JSArray):
                 v = list(v)
-            if isinstance(v, basestring):
-                if not isinstance(v, unicode):
+            if isinstance(v, str):
+                if not isinstance(v, str):
                     v = v.decode('utf-8')
                 v = CString(v)
             elif isinstance(v, int):

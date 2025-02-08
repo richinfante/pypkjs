@@ -18,8 +18,9 @@ import urllib
 
 from libpebble2.util.bundle import PebbleBundle
 from libpebble2.services.appmessage import AppMessageService
+
 # import pypkjs.javascript as javascript
-# import pypkjs.javascript.runtime
+from pypkjs.javascript.runtime import JSRuntime
 from .pebble_manager import PebbleManager
 # from pypkjs.timeline import PebbleTimeline
 from pypkjs.timeline.urls import URLManager
@@ -94,13 +95,11 @@ class Runner(object):
             self.stop_js()
 
     def start_js(self, pbw):
-        print('JS Not Yet Implemented')
-        return
         self.stop_js()
         if pbw.src is None:
             return
         self.running_uuid = pbw.uuid
-        self.js = javascript.runtime.JSRuntime(self.pebble, pbw, self, persist_dir=self.persist_dir,
+        self.js = JSRuntime(self.pebble, pbw, self, persist_dir=self.persist_dir,
                                                block_private_addresses=self.block_private_addresses)
         self.js.log_output = lambda m: self.log_output(m)
         self.js.open_config_page = lambda url, callback: self.open_config_page(url, callback)
