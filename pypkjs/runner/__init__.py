@@ -30,7 +30,6 @@ class Runner(object):
     PBW = collections.namedtuple('PBW', ('uuid', 'src', 'manifest', 'layouts', 'prefixes'))
 
     def __init__(self, qemu, pbws, persist_dir=None, oauth_token=None, layout_file=None, block_private_addresses=False):
-        print('INITIALIZE PKPYJS RUNNER: pid: %s' % os.getpid())
         self.qemu = qemu
         self.pebble = PebbleManager(qemu)
         self.persist_dir = persist_dir
