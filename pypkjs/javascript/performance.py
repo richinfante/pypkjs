@@ -9,8 +9,6 @@ class Performance(object):
         runtime.register_syscall("performance.now", lambda: time.time())
         runtime.run_js("""
              performance = new (function() {
-                this.now = function now() {
-                   return _syscall.exec('performance.now', []);
-                }
+                this.now = get_syscall_func('performance.now');
             })();
         """)

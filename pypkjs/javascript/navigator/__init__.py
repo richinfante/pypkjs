@@ -1,27 +1,28 @@
 from __future__ import absolute_import
 __author__ = 'katharine'
 
-import pypkjs.PyV8 as v8
 from .geolocation import Geolocation
-
 
 class Navigator(object):
     def __init__(self, runtime):
 
         self._runtime = runtime
         self._runtime = runtime
+        self.geolocation = Geolocation(runtime)
+        
+        runtime.register_syscall('navigator.geolocation.getCurrentPosition', self.geolocation.getCurrentPosition)
+        runtime.register_syscall('navigator.geolocation.watchPosition', self.geolocation.watchPosition)
+        runtime.register_syscall('navigator.geolocation.clearWatch', self.geolocation.clearWatch)
+        
 
-        self.extension = v8.JSExtension(runtime.ext_name("navigator"), """
-        navigator = new (function() {
-            native function _internal_location();
-            this.language = 'en-GB';
-
-            var location = _internal_location();
-            if(true) { // TODO: this should be a check on geolocation being enabled.
+        runtime.run_js("""
+            navigator = new (function() {
+                this.language = 'en-GB';
                 this.geolocation = new (function() {
-                    _make_proxies(this, location, ['getCurrentPosition', 'watchPosition', 'clearWatch']);
+                    this.getCurrentPosition = get_syscall_func('navigator.geolocation.getCurrentPosition');
+                    this.watchPosition = get_syscall_func('navigator.geolocation.watchPosition');
+                    this.clearWatch = get_syscall_func('navigator.geolocation.clearWatch');
                 })();
-            }
-        })();
-        """, lambda f: lambda: Geolocation(runtime), dependencies=["runtime/internal/proxy"])
+            })();
+        """)
 

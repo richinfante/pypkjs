@@ -11,11 +11,8 @@ from .exceptions import JSRuntimeException
 
 Event = lambda runtime, *args: v8.JSObject.create(runtime.context.locals.Event, args)
 
-
-class EventSourceMixin(object):
+class EventSourcePlugin:
     def __init__(self, runtime):
-        self.__listeners = {}
-        self.__runtime = runtime
         runtime.run_js("""        
             Event = function(event_type, event_init_dict) {
                 var self = this;
@@ -43,6 +40,11 @@ class EventSourceMixin(object):
             Event.AT_TARGET = 2;
             Event.BUBBLING_PHASE = 3;
         """)
+
+class EventSourceMixin(object):
+    def __init__(self, runtime):
+        self.__listeners = {}
+        self.__runtime = runtime
         super(EventSourceMixin, self).__init__()
 
     def addEventListener(self, event, listener, capture=False):

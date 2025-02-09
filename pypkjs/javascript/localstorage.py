@@ -15,7 +15,7 @@ _storage_cache = {}  # This is used when filesystem-based storage is unavailable
 class LocalStorage(object):
     def __init__(self, runtime, persist_dir=None):
         self.storage = None
-        if persist_dir is not None:
+        if persist_dir is not None and False:  # TODO: enable persistence
             try:
                 try:
                     os.makedirs(os.path.join(persist_dir, 'localstorage'))
@@ -30,17 +30,33 @@ class LocalStorage(object):
             logger.warning("Using transient store.")
             self.storage = _storage_cache.setdefault(str(runtime.pbw.uuid), {})
 
-        self.extension = v8.JSExtension(runtime.ext_name("localstorage"), """
-        (function() {
-            native function _internal();
-
-            var proxy = _make_proxies({}, _internal(), ['set', 'has', 'delete_', 'keys', 'enumerate']);
-            var methods = _make_proxies({}, _internal(), ['clear', 'getItem', 'setItem', 'removeItem', 'key']);
-            proxy.get = function get(p, name) { return methods[name] || _internal().get(p, name); }
-
-            this.localStorage = Proxy.create(proxy);
+        runtime.register_syscall("localStorage.set", self.set)
+        runtime.register_syscall("localStorage.get", self.get)
+        runtime.register_syscall("localStorage.has", self.has)
+        runtime.register_syscall("localStorage.delete", self.delete_)
+        runtime.register_syscall("localStorage.keys", self.keys)
+        runtime.register_syscall("localStorage.enumerate", self.enumerate)
+        runtime.register_syscall("localStorage.clear", self.clear)
+        runtime.register_syscall("localStorage.getItem", self.getItem)
+        runtime.register_syscall("localStorage.setItem", self.setItem)
+        runtime.register_syscall("localStorage.removeItem", self.removeItem)
+        runtime.register_syscall("localStorage.key", self.key)
+        
+        runtime.run_js("""
+        localStorage = new (function() {
+            this.set = get_syscall_func('localStorage.set');
+            this.get = get_syscall_func('localStorage.get');
+            this.has = get_syscall_func('localStorage.has');
+            this.delete = get_syscall_func('localStorage.delete');
+            this.delete_ = get_syscall_func('localStorage.delete_');
+            this.keys = get_syscall_func('localStorage.keys');
+            this.enumerate = get_syscall_func('localStorage.enumerate');
+            this.clear = get_syscall_func('localStorage.clear');
+            this.getItem = get_syscall_func('localStorage.getItem'); 
+            this.setItem = get_syscall_func('localStorage.setItem');
+            this.removeItem = get_syscall_func('localStorage.removeItem');
         })();
-        """, lambda f: lambda: self, dependencies=["runtime/internal/proxy"])
+        """)
 
     def get(self, p, name):
         return self.storage.get(str(name), v8.JSNull())

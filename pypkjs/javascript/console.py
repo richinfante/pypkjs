@@ -13,10 +13,10 @@ class Console(object):
         
         self.runtime.run_js("""
         window.console = {
-            log: function () { _syscall.exec('console.log', Array.prototype.slice.call(arguments)); },
-            warn: function () { _syscall.exec('console.warn', Array.prototype.slice.call(arguments)); },
-            info: function () { _syscall.exec('console.info', Array.prototype.slice.call(arguments)); },
-            error: function () { _syscall.exec('console.error', Array.prototype.slice.call(arguments)); }
+            log: get_syscall_func('console.log'),
+            warn: get_syscall_func('console.warn'),
+            info: get_syscall_func('console.info'),
+            error: get_syscall_func('console.error')
         };
         """)
 

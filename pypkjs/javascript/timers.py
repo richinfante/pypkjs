@@ -14,10 +14,10 @@ class Timers(object):
         runtime.register_syscall('clearInterval', self.clearInterval)
         
         runtime.run_js("""
-            function setTimeout() { _syscall.exec('setTimeout', Array.prototype.slice.call(arguments)); }
-            function clearTimeout() { _syscall.exec('clearTimeout', Array.prototype.slice.call(arguments)); }
-            function setInterval() { _syscall.exec('setInterval', Array.prototype.slice.call(arguments)); }
-            function clearInterval() { _syscall.exec('clearInterval', Array.prototype.slice.call(arguments)); }
+            setTimeout = get_syscall_func('setTimeout');
+            clearTimeout = get_syscall_func('clearTimeout');
+            setInterval = get_syscall_func('setInterval');
+            clearInterval = get_syscall_func('clearInterval');
         """)
 
     def _exec_timer(self, timer_key, timeout_s, repeat, fn):

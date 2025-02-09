@@ -6,57 +6,56 @@ from gevent import monkey; monkey.patch_all()
 import requests
 import requests.exceptions
 
-import pypkjs.PyV8 as v8
+import STPyV8 as v8
 from . import events
 from .safe_requests import NonlocalHTTPAdapter
 from .exceptions import JSRuntimeException
 
-progress_event = v8.JSExtension("runtime/events/progress", """
-ProgressEvent = function(computable, loaded, total) {
-    Event.call(this);
-    computable = computable || false;
-    loaded = loaded || 0;
-    total = total || 0;
-    Object.defineProperties(this, {
-        lengthComputable: {
-            get: function() { return computable; },
-            enumerable: true,
-        },
-        loaded: {
-            get: function() { return loaded; },
-            enumerable: true,
-        },
-        total: {
-            get: function() { return total; },
-            enumerable: true,
-        },
-    });
-}
-ProgressEvent.prototype = Object.create(Event.prototype);
-ProgressEvent.prototype.constructor = ProgressEvent;
-""", dependencies=["runtime/event"])
-
 ProgressEvent = lambda runtime, *args: v8.JSObject.create(runtime.context.locals.ProgressEvent, args)
 
-xml_http_request = v8.JSExtension("runtime/xhr", """
-_init_xhr = function(runtime, session) {
-    native function _xhr();
-    this.XMLHttpRequest = function() {
-        var origin = new _xhr(runtime, session);
-        _make_proxies(this, origin, ['open', 'setRequestHeader', 'overrideMimeType', 'send', 'getResponseHeader',
-                                        'getAllResponseHeaders', 'abort', 'addEventListener', 'removeEventListener']);
-        _make_properties(this, origin, ['readyState', 'response', 'responseText', 'responseType', 'status',
-                                        'statusText', 'timeout', 'onreadystatechange', 'ontimeout', 'onload',
-                                        'onloadstart', 'onloadend', 'onprogress', 'onerror', 'onabort']);
-    }
-    this.XMLHttpRequest.UNSENT = 0;
-    this.XMLHttpRequest.OPENED = 1;
-    this.XMLHttpRequest.HEADERS_RECEIVED = 2;
-    this.XMLHttpRequest.LOADING = 3;
-    this.XMLHttpRequest.DONE = 4;
-
-}
-""", lambda f: XMLHttpRequest, dependencies=[progress_event.name])
+class XHRExtension:
+    def __init__(self, runtime):
+        runtime.run_js("""
+            ProgressEvent = function(computable, loaded, total) {
+                Event.call(this);
+                computable = computable || false;
+                loaded = loaded || 0;
+                total = total || 0;
+                Object.defineProperties(this, {
+                    lengthComputable: {
+                        get: function() { return computable; },
+                        enumerable: true,
+                    },
+                    loaded: {
+                        get: function() { return loaded; },
+                        enumerable: true,
+                    },
+                    total: {
+                        get: function() { return total; },
+                        enumerable: true,
+                    },
+                });
+            }
+            ProgressEvent.prototype = Object.create(Event.prototype);
+            ProgressEvent.prototype.constructor = ProgressEvent;
+                       
+            _init_xhr = function(runtime, session) {
+                var _xhr = _syscall_table.exec('__get_xhr_object', []);
+                this.XMLHttpRequest = function() {
+                    var origin = new _xhr(runtime, session);
+                    _make_proxies(this, origin, ['open', 'setRequestHeader', 'overrideMimeType', 'send', 'getResponseHeader',
+                                                    'getAllResponseHeaders', 'abort', 'addEventListener', 'removeEventListener']);
+                    _make_properties(this, origin, ['readyState', 'response', 'responseText', 'responseType', 'status',
+                                                    'statusText', 'timeout', 'onreadystatechange', 'ontimeout', 'onload',
+                                                    'onloadstart', 'onloadend', 'onprogress', 'onerror', 'onabort']);
+                }
+                this.XMLHttpRequest.UNSENT = 0;
+                this.XMLHttpRequest.OPENED = 1;
+                this.XMLHttpRequest.HEADERS_RECEIVED = 2;
+                this.XMLHttpRequest.LOADING = 3;
+                this.XMLHttpRequest.DONE = 4;
+            };
+        """)
 
 
 class XMLHttpRequest(events.EventSourceMixin):
@@ -99,11 +98,11 @@ class XMLHttpRequest(events.EventSourceMixin):
         super(XMLHttpRequest, self).__init__(runtime)
 
 
-    def open(self, method, url, async=True, user=None, password=None):
+    def open(self, method, url, async_=True, user=None, password=None):
         self._request = requests.Request(method, url)
         if user is not None:
             self._request.auth = (user, password or "")
-        self._async = async
+        self._async = async_
         self.readyState = self.OPENED
         self._trigger_async_event("readystatechange")
 
@@ -171,10 +170,10 @@ class XMLHttpRequest(events.EventSourceMixin):
 
     def send(self, data=None):
         if data is not None:
-            if not isinstance(data, basestring) and str(data) == '[object ArrayBuffer]':
+            if not isinstance(data, str) and str(data) == '[object ArrayBuffer]':
                 uint8_array = self._runtime.context.locals.Uint8Array
                 data_array = uint8_array.create(uint8_array, (data,))
-                self._request.data = bytes(bytearray(data_array[str(x)] for x in xrange(data_array.length)))
+                self._request.data = bytes(bytearray(data_array[str(x)] for x in range(data_array.length)))
             else:
                 self._request.data = str(data)
         self._thread = self._runtime.group.spawn(self._do_send)
@@ -204,4 +203,6 @@ def prepare_xhr(runtime):
         adapter = NonlocalHTTPAdapter()
         session.mount('http://', adapter)
         session.mount('https://', adapter)
+        
+    runtime.register_syscall('__get_xhr_object', lambda: XMLHttpRequest)
     return runtime.context.locals._init_xhr(runtime, session)

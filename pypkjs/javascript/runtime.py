@@ -20,6 +20,8 @@ CALL_TABLE = {
 }
 
 def printify_arg(arg):
+    if arg is None:
+        return 'null'
     if isinstance(arg, (str, int, float)):
         return arg
     else:
@@ -27,11 +29,11 @@ def printify_arg(arg):
 
 class SyscallInterface(object):
     def exec(self, name, args):
-        print('SYSCALL: ', name, json.dumps([printify_arg(arg) for arg in args]))
+        logger.debug('SYSCALL: %s (%s) ', name, json.dumps([printify_arg(arg) for arg in args]))
         return CALL_TABLE[name](*args)
 
 class Global(v8.JSClass):
-    _syscall = SyscallInterface()
+    _syscall_table = SyscallInterface()
 
 class JSRuntime(object):
     def __init__(self, qemu, pbw, runner, persist_dir=None, block_private_addresses=False):
@@ -54,6 +56,13 @@ class JSRuntime(object):
             self.context.eval("this.toString = function() { return '[object Window]'; }")
             self.context.eval("window = this;")
             self.context.eval("""
+
+            function get_syscall_func (name) {
+                return function() {
+                    return _syscall_table.exec(name, Array.prototype.slice.call(arguments));
+                }
+            }
+
             function _make_proxies(proxy, origin, names) {
                 names.forEach(function(name) {
                     proxy[name] = eval("(function " + name + "() { return origin[name].apply(origin, arguments); })");
@@ -93,6 +102,12 @@ class JSRuntime(object):
             logger.info("JS starting")
             try:
                 self.context.eval(src, filename)
+                print('eval done!!!')
+                
+                print('enqueue pjs')
+                self.enqueue(self.pjs.pebble._connect)
+                self.event_loop()
+                print('event loop done.', self.queue.qsize())
             except (v8.JSSyntaxError) as e:
                 self.log_output(e.hint(src))
                 self.log_output("JS failed.")
@@ -100,11 +115,9 @@ class JSRuntime(object):
                 self.log_output(e.stackTrace)
                 self.log_output("JS failed.")
             except Exception as e:
+                print(e)
                 self.log_output(e.message)
                 raise
-            else:
-                self.enqueue(self.pjs.pebble._connect)
-                self.event_loop()
             finally:
                 self.pjs.shutdown()
                 self.group.kill(timeout=2)

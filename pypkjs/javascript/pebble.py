@@ -38,37 +38,19 @@ class TokenException(Exception):
 
 class Pebble(events.EventSourceMixin, v8.JSClass):
     def __init__(self, runtime, pebble):
-        runtime.register_syscall("Pebble.sendAppMessage", self.sendAppMessage)
-        runtime.register_syscall("Pebble.showSimpleNotificationOnPebble", self.showSimpleNotificationOnPebble)
-        runtime.register_syscall("Pebble.getAccountToken", self.getAccountToken)
-        runtime.register_syscall("Pebble.getWatchToken", self.getWatchToken)
-        runtime.register_syscall("Pebble.addEventListener", self.addEventListener)
-        runtime.register_syscall("Pebble.removeEventListener", self.removeEventListener)
-        runtime.register_syscall("Pebble.openURL", self.openURL)
-        runtime.register_syscall("Pebble.getTimelineToken", self.getTimelineToken)
-        runtime.register_syscall("Pebble.timelineSubscribe", self.timelineSubscribe)
-        runtime.register_syscall("Pebble.timelineUnsubscribe", self.timelineUnsubscribe)
-        runtime.register_syscall("Pebble.timelineSubscriptions", self.timelineSubscriptions)
-        runtime.register_syscall("Pebble.getActiveWatchInfo", self.getActiveWatchInfo)
-        runtime.register_syscall("Pebble.appGlanceReload", self.appGlanceReload)
+        # expose this instance to the JS runtime
+        runtime.register_syscall("__get_pebble_instance", lambda: self)
         
+        # create our JS Pebble object
         runtime.run_js("""
         Pebble = new (function() {
-            this.sendAppMessage = function() { _syscall.exec('Pebble.sendAppMessage', Array.prototype.slice.call(arguments)); };
-            this.showSimpleNotificationOnPebble = function() { _syscall.exec('Pebble.showSimpleNotificationOnPebble', Array.prototype.slice.call(arguments)); };
-            this.getAccountToken = function() { return _syscall.exec('Pebble.getAccountToken', []); };
-            this.getWatchToken = function() { return _syscall.exec('Pebble.getWatchToken', []); };
-            this.addEventListener = function() { _syscall.exec('Pebble.addEventListener', Array.prototype.slice.call(arguments)); };
-            this.removeEventListener = function() { _syscall.exec('Pebble.removeEventListener', Array.prototype.slice.call(arguments)); };
-            this.openURL = function() { _syscall.exec('Pebble.openURL', Array.prototype.slice.call(arguments)); };
-            this.getTimelineToken = function() { _syscall.exec('Pebble.getTimelineToken', Array.prototype.slice.call(arguments)); };
-            this.timelineSubscribe = function() { _syscall.exec('Pebble.timelineSubscribe', Array.prototype.slice.call(arguments)); };
-            this.timelineUnsubscribe = function() { _syscall.exec('Pebble.timelineUnsubscribe', Array.prototype.slice.call(arguments)); };
-            this.timelineSubscriptions = function() { _syscall.exec('Pebble.timelineSubscriptions', Array.prototype.slice.call(arguments)); };
-            this.getActiveWatchInfo = function() { return _syscall.exec('Pebble.getActiveWatchInfo', []); };
-            this.appGlanceReload = function() { _syscall.exec('Pebble.appGlanceReload', Array.prototype.slice.call(arguments)); };
+            var _internal_pebble = _syscall_table.exec('__get_pebble_instance', []);
+            _make_proxies(this, _internal_pebble,
+                ['sendAppMessage', 'showSimpleNotificationOnPebble', 'getAccountToken', 'getWatchToken',
+                'addEventListener', 'removeEventListener', 'openURL', 'getTimelineToken', 'timelineSubscribe',
+                'timelineUnsubscribe', 'timelineSubscriptions', 'getActiveWatchInfo', 'appGlanceReload']);
             this.platform = 'pypkjs';
-        })();          
+        })();
                        
         """)
         
