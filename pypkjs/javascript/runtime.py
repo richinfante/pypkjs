@@ -29,8 +29,14 @@ def printify_arg(arg):
 
 class SyscallInterface(object):
     def exec(self, name, args):
-        logger.debug('SYSCALL: %s (%s) ', name, json.dumps([printify_arg(arg) for arg in args]))
-        return CALL_TABLE[name](*args)
+        arg_str = json.dumps([printify_arg(arg) for arg in args])
+        logger.debug('SYSCALL: %s (%s) ', name, arg_str)
+        try:
+            return CALL_TABLE[name](*args)
+        except Exception as e:
+            logger.exception("Error running syscall %s", name)
+            print('PKJS Internal Error running %s(%s): %s' % (name, arg_str, str(e)))
+            raise e
 
 class Global(v8.JSClass):
     _syscall_table = SyscallInterface()
@@ -46,7 +52,7 @@ class JSRuntime(object):
         self.persist_dir = persist_dir
         self.block_private_addresses = block_private_addresses
         JSRuntime.runtimeCount += 1
-        
+
     def register_syscall(self, name, call_fn):
         CALL_TABLE[name] = call_fn
 
@@ -87,10 +93,10 @@ class JSRuntime(object):
             }
             """)
             self.pjs = PebbleKitJS(self, self.qemu, persist=self.persist_dir)
-            
+
             # Do some setup
             self.pjs.do_post_setup()
-            
+
     def run_js(self, src):
         self.context.eval(src)
 
@@ -103,20 +109,20 @@ class JSRuntime(object):
             try:
                 self.context.eval(src, filename)
                 print('eval done!!!')
-                
+
                 print('enqueue pjs')
                 self.enqueue(self.pjs.pebble._connect)
                 self.event_loop()
                 print('event loop done.', self.queue.qsize())
-            except (v8.JSSyntaxError) as e:
-                self.log_output(e.hint(src))
-                self.log_output("JS failed.")
+            # except (v8.JSSyntaxError) as e:
+            #     self.log_output(e.hint(src))
+            #     self.log_output("JS failed.")
             except (v8.JSError, JSRuntimeException) as e:
                 self.log_output(e.stackTrace)
                 self.log_output("JS failed.")
             except Exception as e:
                 print(e)
-                self.log_output(e.message)
+                self.log_output(str(type(e).__name__) + ': ' + str(e))
                 raise
             finally:
                 self.pjs.shutdown()

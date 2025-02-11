@@ -10,7 +10,7 @@ class Console(object):
         self.runtime.register_syscall("console.warn", self.warn)
         self.runtime.register_syscall("console.info", self.info)
         self.runtime.register_syscall("console.error", self.error)
-        
+
         self.runtime.run_js("""
         window.console = {
             log: get_syscall_func('console.log'),
@@ -21,8 +21,6 @@ class Console(object):
         """)
 
     def log(self, *params):
-        print('LOG', *params)
-        return
         # kOverview == kLineNumber | kColumnOffset | kScriptName | kFunctionName
         trace_str = str(v8.JSStackTrace.GetCurrentStackTrace(2, v8.JSStackTrace.Options.Overview))
         try:
@@ -33,9 +31,21 @@ class Console(object):
             file_and_line = u"{}:{}".format(filename, line_num)
         except:
             file_and_line = u"???:?:?"
-        log_str = u' '.join([x.toString().decode('utf-8') if hasattr(x, 'toString')
-                                           else bytes(x).decode('utf-8') for x in params])
-        self.runtime.log_output(u"{} {}".format(file_and_line, log_str))
+
+        log_components = []
+        for x in params:
+            if hasattr(x, 'toString'):
+                log_components.append(x.toString())
+            elif isinstance(x, str):
+                log_components.append(x)
+            elif isinstance(x, (float, int)):
+                log_components.append(str(x))
+            elif isinstance(x, bytes):
+                log_components.append(x.decode('utf-8'))
+            else:
+                log_components.append(repr(x))
+
+        self.runtime.log_output(u"{} {}".format(file_and_line, ' '.join(log_components)))
 
     def warn(self, *params):
         self.log(*params)

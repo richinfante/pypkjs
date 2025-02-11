@@ -6,7 +6,7 @@ import STPyV8 as v8
 from .exceptions import JSRuntimeException
 
 # event = v8.JSExtension("runtime/event", """
-    
+
 # """)
 
 Event = lambda runtime, *args: v8.JSObject.create(runtime.context.locals.Event, args)
@@ -89,7 +89,7 @@ class EventSourceMixin(object):
                 except (v8.JSError, JSRuntimeException) as e:
                     self.__runtime.log_output(e.stackTrace)
                 except Exception as e:
-                    self.__runtime.log_output(e.message)
+                    self.__runtime.log_output(str(type(e).__name__) + ': ' + str(e))
                     raise
 
         self.__runtime.enqueue(go)
