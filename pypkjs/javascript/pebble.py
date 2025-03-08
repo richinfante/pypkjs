@@ -29,6 +29,11 @@ from . import events
 from ..timeline.attributes import TimelineAttributeSet
 from .exceptions import JSRuntimeException
 
+# a little hacky but covers both cases for Sequence
+if not hasattr(collections, 'Sequence'):
+    import collections.abc
+    collections.Sequence = collections.abc.Sequence
+
 logger = logging.getLogger('pypkjs.javascript.pebble')
 
 
