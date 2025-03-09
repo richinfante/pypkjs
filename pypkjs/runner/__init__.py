@@ -19,7 +19,6 @@ import urllib
 from libpebble2.util.bundle import PebbleBundle
 from libpebble2.services.appmessage import AppMessageService
 
-# import pypkjs.javascript as javascript
 from pypkjs.javascript.runtime import JSRuntime
 from .pebble_manager import PebbleManager
 # from pypkjs.timeline import PebbleTimeline

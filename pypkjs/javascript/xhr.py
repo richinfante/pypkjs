@@ -190,7 +190,7 @@ class XMLHttpRequest(events.EventSourceMixin):
         if self._response is None:
             return None
         # https://xhr.spec.whatwg.org/#the-getallresponseheaders()-method
-        return '\x0d\x0a'.join('%s\x3a\x20%s' % (k, v) for k, v in self._response.headers.iteritems())
+        return '\x0d\x0a'.join('%s\x3a\x20%s' % (k, v) for k, v in self._response.headers.items())
 
     def abort(self):
         if self._sent and self._thread is not None:
@@ -203,6 +203,6 @@ def prepare_xhr(runtime):
         adapter = NonlocalHTTPAdapter()
         session.mount('http://', adapter)
         session.mount('https://', adapter)
-        
+
     runtime.register_syscall('__get_xhr_object', lambda: XMLHttpRequest)
     return runtime.context.locals._init_xhr(runtime, session)

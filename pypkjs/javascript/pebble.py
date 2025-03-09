@@ -14,6 +14,12 @@ import traceback
 from uuid import UUID
 import urllib
 
+# support both locations for "Sequence"
+try:
+    from collections.abc import Sequence as SequenceType
+except ImportError:
+    from collections import Sequence as SequenceType
+
 import STPyV8 as v8
 from libpebble2.protocol.appglance import AppGlance, AppGlanceSlice, AppGlanceSliceType
 from libpebble2.protocol.appmessage import AppMessage
@@ -164,7 +170,7 @@ class Pebble(events.EventSourceMixin, v8.JSClass):
                     self.runtime.log_output("WARNING: illegal float value %s for appmessage key %s" % (v, k))
                     intv = 0
                 v = Int32(intv)
-            elif isinstance(v, collections.Sequence):
+            elif isinstance(v, SequenceType):
                 b = bytearray()
                 for byte in v:
                     if isinstance(byte, int):

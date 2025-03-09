@@ -305,7 +305,7 @@ class TimelineActionSet(object):
     def serialise_attributes(self, attributes):
         serialised = ''
         attribute_count = 0
-        for key, value in attributes.iteritems():
+        for key, value in attributes.items():
             # Lazy approach for now; there are only two attributes, and they're completely different.
             if key == 'title':
                 serialised += struct.pack("<BH%ds" % len(value), 0x01, len(value), value.encode('utf-8'))
@@ -321,4 +321,4 @@ def prepare_db(filename):
     db.init(filename)
     db.connect()
     db.execute_sql("PRAGMA foreign_keys=ON")
-    db.create_tables([TimelineItem, TimelineState, TimelineSubscription, PinTopic], True)
+    db.create_tables([TimelineItem, TimelineState, TimelineSubscription, PinTopic])

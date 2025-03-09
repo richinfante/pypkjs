@@ -23,7 +23,7 @@ class TimelineAttributeSet(object):
     def serialise(self):
         serialised = []
 
-        for key, value in self.attributes.iteritems():
+        for key, value in self.attributes.items():
             if key == 'type':
                 continue
             try:
